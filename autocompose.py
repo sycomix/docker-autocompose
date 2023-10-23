@@ -44,7 +44,7 @@ def generate_network_info():
             },
         }
 
-        networks[network_name] = {key: value for key, value in values.items()}
+        networks[network_name] = dict(values)
 
     return networks
 
@@ -105,15 +105,15 @@ def main():
 
         struct.update(cfile)
 
-        if not c_networks == None:
+        if c_networks is not None:
             networks.update(c_networks)
-        if not c_volumes == None:
+        if c_volumes is not None:
             volumes.update(c_volumes)
 
     # moving the networks = None statements outside of the for loop. Otherwise any container could reset it.
-    if len(networks) == 0:
+    if not networks:
         networks = None
-    if len(volumes) == 0:
+    if not volumes:
         volumes = None
 
     if args.all:
@@ -152,8 +152,7 @@ def generate(cname, createvolumes=False):
 
     # Build yaml dict structure
 
-    cfile = {}
-    cfile[cattrs.get("Name")[1:]] = {}
+    cfile = {cattrs.get("Name")[1:]: {}}
     ct = cfile[cattrs.get("Name")[1:]]
 
     default_networks = ["bridge", "host", "none"]
@@ -238,7 +237,7 @@ def generate(cname, createvolumes=False):
         for mount in values["mounts"]:
             destination = mount["Destination"]
             if not mount["RW"]:
-                destination = destination + ":ro"
+                destination = f"{destination}:ro"
             if mount["Type"] == "volume":
                 mountpoints.append(mount["Name"] + ":" + destination)
                 if not createvolumes:
@@ -248,7 +247,7 @@ def generate(cname, createvolumes=False):
             elif mount["Type"] == "bind":
                 mountpoints.append(mount["Source"] + ":" + destination)
         values["volumes"] = mountpoints
-    if len(volumes) == 0:
+    if not volumes:
         volumes = None
     values["mounts"] = None  # remove this temporary data from the returned data
 
@@ -283,8 +282,7 @@ def generate(cname, createvolumes=False):
         ports = None
 
     # Iterate through values to finish building yaml dict.
-    for key in values:
-        value = values[key]
+    for key, value in values.items():
         if value not in IGNORE_VALUES:
             ct[key] = value
 
